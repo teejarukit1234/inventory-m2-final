@@ -25,15 +25,26 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- OneDrive Direct Download Logic ---
-# ลิงก์ที่แปลงจาก iframe embed ของคุณครับ
-# Resid: D2F8D50D153D114E!142512
-DIRECT_URL = "https://onedrive.live.com/download?cid=d2f8d50d153d114e&resid=D2F8D50D153D114E!142512&authkey=!AAL-L-F6Z3uhcUC"
+# --- OneDrive Link Conversion Logic ---
+def get_direct_link(sharing_url):
+    try:
+        # Encode the sharing URL to base64 for OneDrive API (Method 1)
+        base64_bytes = base64.b64encode(sharing_url.encode("utf-8"))
+        base64_string = base64_bytes.decode("utf-8").replace('=', '').replace('/', '_').replace('+', '-')
+        return f"https://api.onedrive.com/v1.0/shares/u!{base64_string}/root/content"
+    except:
+        return None
+
+# ลิงก์ OneDrive ที่คุณยืนยันแล้วว่าเปิดใน Incognito ได้
+SHARING_URL = "https://1drv.ms/x/c/d2f8d50d153d114e/IQCAAXold6FxQIxpxIaMxT-PAaN1wjYtWRzPRAYo2ALha2s?e=TSbuBT"
 
 def load_data():
+    direct_url = get_direct_link(SHARING_URL)
+    if not direct_url:
+        return None
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(DIRECT_URL, headers=headers, timeout=30)
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        response = requests.get(direct_url, headers=headers, timeout=25)
         if response.status_code == 200:
             return pd.read_excel(io.BytesIO(response.content), engine='openpyxl')
         return None
@@ -42,7 +53,7 @@ def load_data():
 
 def main():
     st.markdown("<h1>คลังสินค้า M2</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>ระบบจัดการสต็อกอัจฉริยะ (Sync OneDrive)</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>REAL-TIME CLOUD INVENTORY</p>", unsafe_allow_html=True)
     
     search = st.text_input("ค้นหาชื่อสินค้า", placeholder="🔍 ค้นชื่อสินค้าที่นี่...", key="search_bar", label_visibility="collapsed")
 
@@ -94,7 +105,7 @@ def main():
             except Exception as e:
                 st.error(f"เกิดข้อผิดพลาดในการแสดงผลข้อมูล: {e}")
         else:
-            st.error("❌ ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าไฟล์ใน OneDrive ยังแชร์อยู่หรือไม่")
+            st.error("❌ ยังไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าไฟล์ใน OneDrive เปิดการแชร์แบบ 'ทุกคนที่มีลิงก์ดูได้' หรือไม่")
 
     render_content()
 
