@@ -90,7 +90,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- OneDrive Direct Download Link ---
-DIRECT_DOWNLOAD_URL = "https://onedrive.live.com/download?resid=D2F8D50D153D114E%21142512&authkey=!AAL-L-F6Z3uhcUC"
+DIRECT_DOWNLOAD_URL = "https://api.onedrive.com/v1.0/shares/u!aHR0cHM6Ly8xZHJ2Lm1zL3gvYy9kMmY4ZDUwZDE1M2QxMTRlL0lRQ0FBWG9sZDZGeFFJeHB4SWFNeFQtUEFlSXFibDlyZVRnb3NidWZiaXBBTEgwP2U9TEt3STV3/root/content"
 
 def download_excel():
     try:
