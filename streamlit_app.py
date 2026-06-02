@@ -7,153 +7,177 @@ import time
 from datetime import datetime
 
 # --- Page Configuration ---
-st.set_page_config(page_title="คลังสินค้า M2", layout="centered")
+st.set_page_config(page_title="M2 Smart Inventory", layout="centered")
 
-# --- High-Fidelity Soft UI CSS ---
+# --- Premium Glassmorphism UI CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
     
     :root {
-        --bg: #f3f4f7;
-        --card-bg: #ffffff;
-        --text-main: #2d3436;
-        --text-muted: #86868b;
-        --accent-blue: #4b91ff;
+        --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        --glass-bg: rgba(255, 255, 255, 0.75);
+        --glass-border: rgba(255, 255, 255, 0.4);
+        --text-main: #1d1d1f;
+        --accent-blue: #007aff;
     }
 
     html, body, [class*="css"] {
         font-family: 'Sarabun', 'Plus Jakarta Sans', sans-serif;
-        background-color: var(--bg);
-        color: var(--text-main);
     }
     
     .stApp {
-        background-color: var(--bg);
-        max-width: 900px;
-        margin: 0 auto;
+        background: var(--bg-gradient);
+        background-attachment: fixed;
     }
 
     h1 {
         font-weight: 800;
-        color: #2d3436;
+        color: var(--text-main);
         font-size: 3.5rem !important;
         text-align: center;
-        margin-top: 2rem !important;
-        margin-bottom: 0.5rem !important;
+        margin-top: 1.5rem !important;
+        letter-spacing: -0.02em;
     }
 
     .subtitle {
-        color: var(--text-muted);
+        color: #515154;
         text-align: center;
-        margin-bottom: 2rem;
-        font-size: 0.9rem;
+        margin-bottom: 2.5rem;
+        font-size: 1rem;
         font-weight: 600;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.15em;
     }
 
-    /* Stats Cards */
+    /* Premium Stats Cards */
     .stat-container {
         display: flex;
-        gap: 20px;
+        gap: 15px;
         margin-bottom: 30px;
-        justify-content: center;
     }
     .stat-item {
         flex: 1;
-        background: var(--card-bg);
-        border-radius: 25px;
-        padding: 25px 15px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid var(--glass-border);
+        border-radius: 28px;
+        padding: 25px 10px;
         text-align: center;
-        box-shadow: 10px 10px 20px rgba(163, 177, 198, 0.2), -10px -10px 20px rgba(255, 255, 255, 0.7);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: all 0.4s ease;
     }
-    .stat-val { font-size: 1.8rem; font-weight: 800; color: #2b62ff; }
-    .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-top: 5px; }
+    .stat-val { font-size: 2rem; font-weight: 800; color: var(--accent-blue); display: block; }
+    .stat-label { font-size: 0.8rem; color: #6e6e73; font-weight: 700; margin-top: 4px; }
 
     /* Category Header */
     .category-header {
         font-weight: 800;
-        color: #2b62ff;
-        font-size: 1.1rem;
-        margin: 30px 0 15px 10px;
+        color: var(--text-main);
+        font-size: 1.3rem;
+        margin: 45px 0 15px 10px;
         display: flex;
         align-items: center;
     }
     .category-header::before {
-        content: "";
-        display: inline-block;
-        width: 4px;
-        height: 1.2rem;
-        background: #2b62ff;
-        margin-right: 10px;
-        border-radius: 2px;
+        content: "📂";
+        margin-right: 12px;
+        font-size: 1.4rem;
     }
 
-    /* Row Card Styling */
+    /* Premium Product Card */
     .row-card {
-        background: var(--card-bg);
-        border-radius: 20px;
-        padding: 18px 25px;
-        margin-bottom: 12px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 22px 28px;
+        margin-bottom: 14px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        box-shadow: 6px 6px 15px rgba(163, 177, 198, 0.15);
-        border: 1px solid rgba(255,255,255,0.8);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
 
-    .row-id {
-        font-weight: 700;
-        color: var(--accent-blue);
-        font-size: 0.85rem;
-        min-width: 40px;
+    .row-card:hover {
+        background: rgba(255, 255, 255, 0.95);
+        transform: scale(1.02) translateY(-3px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.08);
     }
 
     .row-name {
-        font-weight: 500;
+        font-weight: 600;
         color: var(--text-main);
         flex-grow: 1;
-        margin-left: 10px;
-        font-size: 1.05rem;
+        margin-left: 15px;
+        font-size: 1.1rem;
+    }
+    
+    .row-id {
+        background: rgba(0, 122, 255, 0.1);
+        color: var(--accent-blue);
+        padding: 4px 12px;
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 0.85rem;
     }
 
     .row-stock {
         font-weight: 800;
-        font-size: 1.3rem;
+        font-size: 1.5rem;
         margin-right: 25px;
         color: #1d1d1f;
-        min-width: 60px;
+        min-width: 80px;
         text-align: right;
     }
 
-    /* Status Badges */
+    /* Premium Status Badges */
     .badge {
-        padding: 8px 18px;
-        border-radius: 12px;
-        font-size: 0.8rem;
+        padding: 10px 18px;
+        border-radius: 16px;
+        font-size: 0.85rem;
         font-weight: 700;
-        min-width: 110px;
+        min-width: 120px;
         text-align: center;
     }
-    .badge-red { background: #ff3b30; color: white; box-shadow: 0 4px 10px rgba(255, 59, 48, 0.2); }
-    .badge-yellow { background: #ffcc00; color: #1d1d1f; box-shadow: 0 4px 10px rgba(255, 204, 0, 0.2); }
-    .badge-green { background: #34c759; color: white; box-shadow: 0 4px 10px rgba(52, 199, 89, 0.2); }
-    .badge-blue { background: #007aff; color: white; box-shadow: 0 4px 10px rgba(0, 122, 255, 0.2); }
+    .badge-red { background: linear-gradient(135deg, #ff5e62, #ff9966); color: white; }
+    .badge-yellow { background: linear-gradient(135deg, #f6d365, #fda085); color: #1d1d1f; }
+    .badge-green { background: linear-gradient(135deg, #a8ff78, #78ffd6); color: #155724; }
+    .badge-blue { background: linear-gradient(135deg, #2193b0, #6dd5ed); color: white; }
+
+    /* Progress Bar */
+    .progress-bg {
+        width: 100%;
+        height: 8px;
+        background: rgba(0,0,0,0.05);
+        border-radius: 10px;
+        margin-top: 12px;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
     /* Search Bar */
     .stTextInput>div>div>input {
-        background: #ffffff !important;
-        border: 1px solid #e1e1e1 !important;
-        border-radius: 25px !important;
-        padding: 15px 25px !important;
-        box-shadow: 4px 4px 10px rgba(163, 177, 198, 0.1) !important;
+        background: var(--glass-bg) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 35px !important;
+        padding: 18px 30px !important;
+        font-size: 1.05rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.03) !important;
     }
 
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- OneDrive Data Logic ---
+# ลิงก์ OneDrive
 SHARING_URL = "https://1drv.ms/x/c/d2f8d50d153d114e/IQCAAXold6FxQIxpxIaMxT-PAaN1wjYtWRzPRAYo2ALha2s?e=TSbuBT"
 
 def get_direct_link(sharing_url):
@@ -168,7 +192,7 @@ def load_data():
     if not url: return None
     try:
         headers = {'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache'}
-        r = requests.get(url, headers=headers, timeout=20)
+        r = requests.get(url, headers=headers, timeout=25)
         if r.status_code == 200:
             return pd.read_excel(io.BytesIO(r.content), engine='openpyxl')
         return None
@@ -176,12 +200,10 @@ def load_data():
 
 def main():
     st.markdown("<h1>คลังสินค้า M2</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>SMART INVENTORY MANAGEMENT SYSTEM</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>SMART CLOUD INVENTORY</p>", unsafe_allow_html=True)
     
-    # Search bar
-    search = st.text_input("ค้นหาชื่อสินค้า", placeholder="🔍 ค้นหาชื่อสินค้า หรือ รหัสสินค้า...", label_visibility="collapsed")
+    search = st.text_input("ค้นหา", placeholder="🔍 พิมพ์ชื่อสินค้าที่ต้องการค้นหา...", label_visibility="collapsed")
 
-    # Fragment for seamless auto-updates
     @st.fragment(run_every="15s")
     def data_display():
         df_raw = load_data()
@@ -191,40 +213,31 @@ def main():
             try:
                 categorized_data = []
                 current_category = "ทั่วไป"
-                total_items_count = 0
-                total_qty_sum = 0
+                total_items = 0
+                total_stock = 0
                 
                 for _, row in df_raw.iterrows():
                     seq = row.iloc[0]
                     name = str(row.iloc[3]) if pd.notna(row.iloc[3]) else ""
                     stock = row.iloc[6]
-                    
                     if pd.isna(seq) or str(seq).strip() == "":
-                        if name and name not in ["nan", "รายการ", "ลำดับ", "หมายเหตุ"]:
+                        if name and name not in ["nan", "รายการ", "ลำดับ"]:
                             current_category = name
                         continue
-                    
                     try:
-                        seq_num = int(pd.to_numeric(seq))
                         qty = float(pd.to_numeric(stock, errors='coerce') or 0)
-                        
-                        item = {'category': current_category, 'seq': seq_num, 'name': name, 'stock': qty}
-                        total_items_count += 1
-                        total_qty_sum += qty
-                        
-                        if search:
-                            if search.lower() in name.lower():
-                                categorized_data.append(item)
-                        else:
+                        item = {'cat': current_category, 'seq': int(pd.to_numeric(seq)), 'name': name, 'stock': qty}
+                        total_items += 1
+                        total_stock += qty
+                        if not search or search.lower() in name.lower():
                             categorized_data.append(item)
                     except: continue
 
-                # Header Stats
                 st.markdown(f"""
                     <div class="stat-container">
-                        <div class="stat-item"><div class="stat-val">{total_items_count}</div><div class="stat-label">รายการ</div></div>
-                        <div class="stat-item"><div class="stat-val">{int(total_qty_sum):,}</div><div class="stat-label">ยอดรวมคลัง</div></div>
-                        <div class="stat-item"><div class="stat-val">{last_time}</div><div class="stat-label">อัปเดตล่าสุด</div></div>
+                        <div class="stat-item"><span class="stat-val">{total_items}</span><span class="stat-label">รายการทั้งหมด</span></div>
+                        <div class="stat-item"><span class="stat-val">{int(total_stock):,}</span><span class="stat-label">จำนวนรวมคลัง</span></div>
+                        <div class="stat-item"><span class="stat-val">{last_time}</span><span class="stat-label">อัปเดตล่าสุด</span></div>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -233,25 +246,26 @@ def main():
                 else:
                     last_cat = None
                     for item in categorized_data:
-                        if item['category'] != last_cat:
-                            st.markdown(f"<div class='category-header'>หมวด: {item['category']}</div>", unsafe_allow_html=True)
-                            last_cat = item['category']
-                        
-                        # Threshold Logic: 0=Red, 1-50=Yellow, >300=Blue, else=Green
+                        if item['cat'] != last_cat:
+                            st.markdown(f"<div class='category-header'>หมวด: {item['cat']}</div>", unsafe_allow_html=True)
+                            last_cat = item['cat']
                         if item['stock'] <= 0:
-                            b_cls, b_txt = "badge-red", "สินค้าหมด"
+                            b_cls, b_txt, p_color = "badge-red", "สินค้าหมด", "#ff5e62"
                         elif item['stock'] <= 50:
-                            b_cls, b_txt = "badge-yellow", "สินค้าใกล้หมด"
+                            b_cls, b_txt, p_color = "badge-yellow", "สินค้าใกล้หมด", "#f6d365"
                         elif item['stock'] > 300:
-                            b_cls, b_txt = "badge-blue", "สต็อกเยอะพิเศษ"
+                            b_cls, b_txt, p_color = "badge-blue", "สต็อกเยอะพิเศษ", "#2193b0"
                         else:
-                            b_cls, b_txt = "badge-green", "ปกติ"
-
+                            b_cls, b_txt, p_color = "badge-green", "ปกติ", "#a8ff78"
+                        p_width = min((item['stock'] / 300) * 100, 100) if item['stock'] > 0 else 0
                         st.markdown(f"""
                             <div class="row-card">
-                                <div style="display:flex; align-items:center; flex-grow:1;">
-                                    <span class="row-id">{item['seq']}</span>
-                                    <span class="row-name">{item['name']}</span>
+                                <div style="display:flex; flex-direction:column; flex-grow:1;">
+                                    <div style="display:flex; align-items:center;">
+                                        <span class="row-id">{item['seq']}</span>
+                                        <span class="row-name">{item['name']}</span>
+                                    </div>
+                                    <div class="progress-bg"><div class="progress-fill" style="width:{p_width}%; background:{p_color};"></div></div>
                                 </div>
                                 <div style="display:flex; align-items:center;">
                                     <span class="row-stock">{int(item['stock']):,}</span>
@@ -259,10 +273,8 @@ def main():
                                 </div>
                             </div>
                         """, unsafe_allow_html=True)
-            except Exception as e:
-                st.error(f"Error: {e}")
-        else:
-            st.error("❌ ไม่สามารถดึงข้อมูลได้ โปรดเช็คการเชื่อมต่อ OneDrive")
+            except Exception as e: st.error(f"Error: {e}")
+        else: st.warning("🔄 กำลังเชื่อมต่อข้อมูล...")
 
     data_display()
 
