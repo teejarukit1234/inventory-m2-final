@@ -9,7 +9,7 @@ from datetime import datetime
 # --- Page Configuration ---
 st.set_page_config(page_title="คลังสินค้า M2", layout="centered")
 
-# --- High-Fidelity Soft UI CSS (Matched to Screenshot) ---
+# --- High-Fidelity Soft UI CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
@@ -52,7 +52,7 @@ st.markdown("""
         letter-spacing: 0.1em;
     }
 
-    /* Stats Section */
+    /* Stats Cards */
     .stat-container {
         display: flex;
         gap: 20px;
@@ -126,7 +126,7 @@ st.markdown("""
         text-align: right;
     }
 
-    /* Badges */
+    /* Status Badges */
     .badge {
         padding: 8px 18px;
         border-radius: 12px;
@@ -136,10 +136,11 @@ st.markdown("""
         text-align: center;
     }
     .badge-red { background: #ff3b30; color: white; box-shadow: 0 4px 10px rgba(255, 59, 48, 0.2); }
-    .badge-green { background: #34c759; color: white; box-shadow: 0 4px 10px rgba(52, 199, 89, 0.2); }
     .badge-yellow { background: #ffcc00; color: #1d1d1f; box-shadow: 0 4px 10px rgba(255, 204, 0, 0.2); }
+    .badge-green { background: #34c759; color: white; box-shadow: 0 4px 10px rgba(52, 199, 89, 0.2); }
+    .badge-blue { background: #007aff; color: white; box-shadow: 0 4px 10px rgba(0, 122, 255, 0.2); }
 
-    /* Search Bar Customization */
+    /* Search Bar */
     .stTextInput>div>div>input {
         background: #ffffff !important;
         border: 1px solid #e1e1e1 !important;
@@ -159,7 +160,6 @@ def get_direct_link(sharing_url):
     try:
         base64_bytes = base64.b64encode(sharing_url.encode("utf-8"))
         base64_string = base64_bytes.decode("utf-8").replace('=', '').replace('/', '_').replace('+', '-')
-        # Anti-Cache parameter
         return f"https://api.onedrive.com/v1.0/shares/u!{base64_string}/root/content?t={time.time()}"
     except: return None
 
@@ -178,13 +178,11 @@ def main():
     st.markdown("<h1>คลังสินค้า M2</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>SMART INVENTORY MANAGEMENT SYSTEM</p>", unsafe_allow_html=True)
     
-    # Search bar (Outside fragment for fluid typing)
     search = st.text_input("ค้นหาชื่อสินค้า", placeholder="🔍 ค้นหาชื่อสินค้า หรือ รหัสสินค้า...", label_visibility="collapsed")
 
-    # Fragment for seamless auto-updates
     @st.fragment(run_every="15s")
     def data_display():
-        df_raw = load_data()
+        df_raw, source = load_data()
         last_time = datetime.now().strftime("%H:%M:%S")
         
         if df_raw is not None:
@@ -208,13 +206,7 @@ def main():
                         seq_num = int(pd.to_numeric(seq))
                         qty = float(pd.to_numeric(stock, errors='coerce') or 0)
                         
-                        item = {
-                            'category': current_category,
-                            'seq': seq_num,
-                            'name': name,
-                            'stock': qty
-                        }
-                        
+                        item = {'category': current_category, 'seq': seq_num, 'name': name, 'stock': qty}
                         total_items_count += 1
                         total_qty_sum += qty
                         
@@ -225,7 +217,7 @@ def main():
                             categorized_data.append(item)
                     except: continue
 
-                # Stats Cards UI
+                # Header Stats
                 st.markdown(f"""
                     <div class="stat-container">
                         <div class="stat-item"><div class="stat-val">{total_items_count}</div><div class="stat-label">รายการ</div></div>
@@ -243,10 +235,13 @@ def main():
                             st.markdown(f"<div class='category-header'>หมวด: {item['category']}</div>", unsafe_allow_html=True)
                             last_cat = item['category']
                         
-                        if item['stock'] <= 10:
-                            b_cls, b_txt = "badge-red", "สินค้าใกล้หมด"
+                        # Updated Logic: 0 = หมด (แดง), 1-50 = ใกล้หมด (เหลือง), >500 = เยอะ (ฟ้า), else = ปกติ (เขียว)
+                        if item['stock'] <= 0:
+                            b_cls, b_txt = "badge-red", "สินค้าหมด"
+                        elif item['stock'] <= 50:
+                            b_cls, b_txt = "badge-yellow", "สินค้าใกล้หมด"
                         elif item['stock'] > 500:
-                            b_cls, b_txt = "badge-yellow", "สต็อกเยอะพิเศษ"
+                            b_cls, b_txt = "badge-blue", "สต็อกเยอะพิเศษ"
                         else:
                             b_cls, b_txt = "badge-green", "ปกติ"
 
@@ -263,9 +258,9 @@ def main():
                             </div>
                         """, unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"เกิดข้อผิดพลาด: {e}")
+                st.error(f"Error: {e}")
         else:
-            st.error("❌ ไม่สามารถดึงข้อมูลได้ โปรดเช็คการเชื่อมต่อ OneDrive")
+            st.error("❌ กำลังพยายามซิงค์ข้อมูลจาก OneDrive...")
 
     data_display()
 
