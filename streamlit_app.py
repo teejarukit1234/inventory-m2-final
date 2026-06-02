@@ -178,11 +178,13 @@ def main():
     st.markdown("<h1>คลังสินค้า M2</h1>", unsafe_allow_html=True)
     st.markdown("<p class='subtitle'>SMART INVENTORY MANAGEMENT SYSTEM</p>", unsafe_allow_html=True)
     
+    # Search bar
     search = st.text_input("ค้นหาชื่อสินค้า", placeholder="🔍 ค้นหาชื่อสินค้า หรือ รหัสสินค้า...", label_visibility="collapsed")
 
+    # Fragment for seamless auto-updates
     @st.fragment(run_every="15s")
     def data_display():
-        df_raw, source = load_data()
+        df_raw = load_data()
         last_time = datetime.now().strftime("%H:%M:%S")
         
         if df_raw is not None:
@@ -235,7 +237,7 @@ def main():
                             st.markdown(f"<div class='category-header'>หมวด: {item['category']}</div>", unsafe_allow_html=True)
                             last_cat = item['category']
                         
-                        # Updated Logic: 0 = หมด (แดง), 1-50 = ใกล้หมด (เหลือง), >500 = เยอะ (ฟ้า), else = ปกติ (เขียว)
+                        # Threshold Logic: 0=Red, 1-50=Yellow, >300=Blue, else=Green
                         if item['stock'] <= 0:
                             b_cls, b_txt = "badge-red", "สินค้าหมด"
                         elif item['stock'] <= 50:
@@ -260,7 +262,7 @@ def main():
             except Exception as e:
                 st.error(f"Error: {e}")
         else:
-            st.error("❌ กำลังพยายามซิงค์ข้อมูลจาก OneDrive...")
+            st.error("❌ ไม่สามารถดึงข้อมูลได้ โปรดเช็คการเชื่อมต่อ OneDrive")
 
     data_display()
 
