@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import io
 import base64
+import time
 from datetime import datetime
 
 # --- Page Configuration ---
@@ -25,30 +26,29 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- OneDrive Link Conversion Logic ---
+# --- OneDrive Link ---
+SHARING_URL = "https://1drv.ms/x/c/d2f8d50d153d114e/IQCAAXold6FxQIxpxIaMxT-PAaN1wjYtWRzPRAYo2ALha2s?e=TSbuBT"
+
 def get_direct_link(sharing_url):
     try:
-        # Encode the sharing URL to base64 for OneDrive API (Method 1)
         base64_bytes = base64.b64encode(sharing_url.encode("utf-8"))
         base64_string = base64_bytes.decode("utf-8").replace('=', '').replace('/', '_').replace('+', '-')
-        return f"https://api.onedrive.com/v1.0/shares/u!{base64_string}/root/content"
+        # เพิ่มพารามิเตอร์เวลาเพื่อป้องกันระบบจำค่าเก่า (Anti-Cache)
+        return f"https://api.onedrive.com/v1.0/shares/u!{base64_string}/root/content?t={time.time()}"
     except:
         return None
-
-# ลิงก์ OneDrive ที่คุณยืนยันแล้วว่าเปิดใน Incognito ได้
-SHARING_URL = "https://1drv.ms/x/c/d2f8d50d153d114e/IQCAAXold6FxQIxpxIaMxT-PAaN1wjYtWRzPRAYo2ALha2s?e=TSbuBT"
 
 def load_data():
     direct_url = get_direct_link(SHARING_URL)
     if not direct_url:
         return None
     try:
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        headers = {'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache'}
         response = requests.get(direct_url, headers=headers, timeout=25)
         if response.status_code == 200:
             return pd.read_excel(io.BytesIO(response.content), engine='openpyxl')
         return None
-    except Exception as e:
+    except:
         return None
 
 def main():
@@ -57,28 +57,29 @@ def main():
     
     search = st.text_input("ค้นหาชื่อสินค้า", placeholder="🔍 ค้นชื่อสินค้าที่นี่...", key="search_bar", label_visibility="collapsed")
 
-    @st.fragment(run_every="60s")
+    # อัปเดตข้อมูลทุกๆ 20 วินาที
+    @st.fragment(run_every="20s")
     def render_content():
         df = load_data()
         last_update = datetime.now().strftime("%H:%M:%S")
 
         if df is not None:
             try:
-                # เลือกคอลัมน์ A=0 (ลำดับ), D=3 (ชื่อ), G=6 (สต็อก)
+                # เลือกคอลัมน์ ลำดับ(0), ชื่อ(3), สต็อก(6)
                 p_df = pd.DataFrame({
                     'seq': df.iloc[:, 0],
                     'name': df.iloc[:, 3],
                     'stock': df.iloc[:, 6]
                 })
                 
-                # กรองเฉพาะรายการสินค้าจริงที่มีเลขลำดับ
+                # กรองเฉพาะแถวที่มีเลขลำดับจริง
                 p_df['seq_n'] = pd.to_numeric(p_df['seq'], errors='coerce')
                 p_df = p_df.dropna(subset=['seq_n', 'name'])
 
                 if search:
                     p_df = p_df[p_df['name'].str.contains(search, case=False, na=False)]
 
-                st.caption(f"อัปเดตล่าสุด: {last_update} (เชื่อมต่อสำเร็จ ✅)")
+                st.caption(f"อัปเดตล่าสุดเมื่อ: {last_update} (เช็คข้อมูลใหม่ทุก 20 วินาที ✅)")
 
                 st.markdown("<div style='margin-top: 10px;'>", unsafe_allow_html=True)
                 for _, row in p_df.iterrows():
@@ -86,7 +87,7 @@ def main():
                     except: qty = 0
                     
                     if qty <= 10:
-                        b_cls, b_txt = "badge-red", "สินค้าใกล้หมด"
+                        b_cls, b_txt = "badge-red", "ใกล้หมด"
                     elif qty > 500:
                         b_cls, b_txt = "badge-yellow", "เยอะพิเศษ"
                     else:
@@ -96,16 +97,16 @@ def main():
                         <div class="row-card">
                             <div><b>{int(row['seq_n'])}</b>. {row['name']}</div>
                             <div style="display: flex; align-items: center;">
-                                <span style="margin-right:15px; font-weight:bold; font-size:1.1rem;">{int(qty):,}</span>
+                                <span style="margin-right:15px; font-weight:bold; font-size:1.1rem; color:#2b62ff;">{int(qty):,}</span>
                                 <span class="badge {b_cls}">{b_txt}</span>
                             </div>
                         </div>
                     """, unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"เกิดข้อผิดพลาดในการแสดงผลข้อมูล: {e}")
+                st.error(f"โครงสร้างไฟล์ผิดปกติ: {e}")
         else:
-            st.error("❌ ยังไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบว่าไฟล์ใน OneDrive เปิดการแชร์แบบ 'ทุกคนที่มีลิงก์ดูได้' หรือไม่")
+            st.error("❌ กำลังเชื่อมต่อฐานข้อมูล OneDrive...")
 
     render_content()
 
