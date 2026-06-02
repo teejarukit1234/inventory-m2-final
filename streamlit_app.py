@@ -4,12 +4,14 @@ import requests
 import io
 import base64
 import time
+import os
+import shutil
 from datetime import datetime
 
 # --- Page Configuration ---
 st.set_page_config(page_title="M2 Smart Inventory", layout="centered")
 
-# --- Premium Glassmorphism UI CSS ---
+# --- High-Fidelity Responsive Glassmorphism UI CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
@@ -31,25 +33,24 @@ st.markdown("""
         background-attachment: fixed;
     }
 
+    /* Header Styling */
     h1 {
         font-weight: 800;
         color: var(--text-main);
         font-size: 3.5rem !important;
         text-align: center;
-        margin-top: 1.5rem !important;
+        margin-top: 1rem !important;
         letter-spacing: -0.02em;
     }
-
     .subtitle {
         color: #515154;
         text-align: center;
-        margin-bottom: 2.5rem;
+        margin-bottom: 2rem;
         font-size: 1rem;
         font-weight: 600;
-        letter-spacing: 0.15em;
     }
 
-    /* Premium Stats Cards */
+    /* Stats Section */
     .stat-container {
         display: flex;
         gap: 15px;
@@ -61,123 +62,78 @@ st.markdown("""
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
         border: 1px solid var(--glass-border);
-        border-radius: 28px;
-        padding: 25px 10px;
+        border-radius: 24px;
+        padding: 20px 10px;
         text-align: center;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        transition: all 0.4s ease;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     }
     .stat-val { font-size: 2rem; font-weight: 800; color: var(--accent-blue); display: block; }
-    .stat-label { font-size: 0.8rem; color: #6e6e73; font-weight: 700; margin-top: 4px; }
+    .stat-label { font-size: 0.75rem; color: #6e6e73; font-weight: 700; margin-top: 4px; }
 
     /* Category Header */
     .category-header {
         font-weight: 800;
         color: var(--text-main);
-        font-size: 1.3rem;
-        margin: 45px 0 15px 10px;
+        font-size: 1.2rem;
+        margin: 35px 0 15px 5px;
         display: flex;
         align-items: center;
     }
-    .category-header::before {
-        content: "📂";
-        margin-right: 12px;
-        font-size: 1.4rem;
-    }
+    .category-header::before { content: "📂"; margin-right: 10px; }
 
-    /* Premium Product Card */
+    /* Product Card */
     .row-card {
         background: var(--glass-bg);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid var(--glass-border);
-        border-radius: 24px;
-        padding: 22px 28px;
-        margin-bottom: 14px;
+        border-radius: 20px;
+        padding: 18px 22px;
+        margin-bottom: 12px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        transition: transform 0.2s ease;
     }
+    .row-card:hover { transform: scale(1.01); background: rgba(255, 255, 255, 0.95); }
 
-    .row-card:hover {
-        background: rgba(255, 255, 255, 0.95);
-        transform: scale(1.02) translateY(-3px);
-        box-shadow: 0 15px 40px rgba(0,0,0,0.08);
-    }
+    .row-name { font-weight: 600; color: var(--text-main); flex-grow: 1; margin-left: 12px; font-size: 1.05rem; }
+    .row-id { background: rgba(0, 122, 255, 0.1); color: var(--accent-blue); padding: 3px 10px; border-radius: 8px; font-weight: 800; font-size: 0.8rem; }
+    .row-stock { font-weight: 800; font-size: 1.4rem; margin-right: 18px; color: #1d1d1f; min-width: 60px; text-align: right; }
 
-    .row-name {
-        font-weight: 600;
-        color: var(--text-main);
-        flex-grow: 1;
-        margin-left: 15px;
-        font-size: 1.1rem;
-    }
-    
-    .row-id {
-        background: rgba(0, 122, 255, 0.1);
-        color: var(--accent-blue);
-        padding: 4px 12px;
-        border-radius: 10px;
-        font-weight: 800;
-        font-size: 0.85rem;
-    }
-
-    .row-stock {
-        font-weight: 800;
-        font-size: 1.5rem;
-        margin-right: 25px;
-        color: #1d1d1f;
-        min-width: 80px;
-        text-align: right;
-    }
-
-    /* Premium Status Badges */
-    .badge {
-        padding: 10px 18px;
-        border-radius: 16px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        min-width: 120px;
-        text-align: center;
-    }
+    /* Badges */
+    .badge { padding: 8px 15px; border-radius: 14px; font-size: 0.8rem; font-weight: 700; min-width: 110px; text-align: center; }
     .badge-red { background: linear-gradient(135deg, #ff5e62, #ff9966); color: white; }
     .badge-yellow { background: linear-gradient(135deg, #f6d365, #fda085); color: #1d1d1f; }
     .badge-green { background: linear-gradient(135deg, #a8ff78, #78ffd6); color: #155724; }
     .badge-blue { background: linear-gradient(135deg, #2193b0, #6dd5ed); color: white; }
 
     /* Progress Bar */
-    .progress-bg {
-        width: 100%;
-        height: 8px;
-        background: rgba(0,0,0,0.05);
-        border-radius: 10px;
-        margin-top: 12px;
-        overflow: hidden;
-    }
-    .progress-fill {
-        height: 100%;
-        border-radius: 10px;
-        transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+    .progress-bg { width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; margin-top: 10px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 10px; transition: width 1.5s ease; }
 
     /* Search Bar */
-    .stTextInput>div>div>input {
-        background: var(--glass-bg) !important;
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid var(--glass-border) !important;
-        border-radius: 35px !important;
-        padding: 18px 30px !important;
-        font-size: 1.05rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.03) !important;
+    .stTextInput>div>div>input { border-radius: 30px !important; padding: 15px 25px !important; }
+
+    /* MOBILE RESPONSIVE TWEAKS */
+    @media (max-width: 640px) {
+        h1 { font-size: 2.2rem !important; }
+        .stat-container { flex-direction: column; gap: 10px; }
+        .stat-item { padding: 15px; }
+        .row-card { padding: 15px; flex-wrap: wrap; }
+        .row-name { width: 100%; margin-left: 0; margin-top: 5px; font-size: 1rem; order: 1; }
+        .row-id { order: 0; }
+        .row-stock { order: 2; margin-right: 10px; font-size: 1.2rem; flex-grow: 1; text-align: left; margin-top: 10px; }
+        .badge { order: 3; margin-top: 10px; min-width: 90px; padding: 6px 10px; font-size: 0.75rem; }
+        .progress-bg { order: 4; margin-top: 15px; }
     }
 
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# ลิงก์ OneDrive
+# ลิงก์ OneDrive (สำหรับการนำไปอัปโหลดขึ้น Cloud)
 SHARING_URL = "https://1drv.ms/x/c/d2f8d50d153d114e/IQCAAXold6FxQIxpxIaMxT-PAaN1wjYtWRzPRAYo2ALha2s?e=TSbuBT"
 
 def get_direct_link(sharing_url):
@@ -188,15 +144,26 @@ def get_direct_link(sharing_url):
     except: return None
 
 def load_data():
+    # ตรวจสอบว่ารันบนเครื่อง Local หรือไม่
+    LOCAL_PATH = r"C:\Users\Angelo\OneDrive\ทดสอบระบบ\ทดสอบฟอร์มคลังสินค้า\2.คลังใหญ่ (จัดหมวด).xlsx"
+    if os.path.exists(LOCAL_PATH):
+        try:
+            temp_file = "temp_premium_responsive.xlsx"
+            shutil.copy2(LOCAL_PATH, temp_file)
+            df = pd.read_excel(temp_file)
+            if os.path.exists(temp_file): os.remove(temp_file)
+            return df
+        except: pass
+    
+    # ดึงข้อมูลจาก Cloud (OneDrive)
     url = get_direct_link(SHARING_URL)
-    if not url: return None
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache'}
-        r = requests.get(url, headers=headers, timeout=25)
-        if r.status_code == 200:
+    if url:
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0', 'Cache-Control': 'no-cache'}
+            r = requests.get(url, headers=headers, timeout=25)
             return pd.read_excel(io.BytesIO(r.content), engine='openpyxl')
-        return None
-    except: return None
+        except: return None
+    return None
 
 def main():
     st.markdown("<h1>คลังสินค้า M2</h1>", unsafe_allow_html=True)
@@ -233,6 +200,7 @@ def main():
                             categorized_data.append(item)
                     except: continue
 
+                # Stats Header
                 st.markdown(f"""
                     <div class="stat-container">
                         <div class="stat-item"><span class="stat-val">{total_items}</span><span class="stat-label">รายการทั้งหมด</span></div>
@@ -249,6 +217,7 @@ def main():
                         if item['cat'] != last_cat:
                             st.markdown(f"<div class='category-header'>หมวด: {item['cat']}</div>", unsafe_allow_html=True)
                             last_cat = item['cat']
+                        
                         if item['stock'] <= 0:
                             b_cls, b_txt, p_color = "badge-red", "สินค้าหมด", "#ff5e62"
                         elif item['stock'] <= 50:
@@ -257,23 +226,21 @@ def main():
                             b_cls, b_txt, p_color = "badge-blue", "สต็อกเยอะพิเศษ", "#2193b0"
                         else:
                             b_cls, b_txt, p_color = "badge-green", "ปกติ", "#a8ff78"
+                        
                         p_width = min((item['stock'] / 300) * 100, 100) if item['stock'] > 0 else 0
+
                         st.markdown(f"""
                             <div class="row-card">
-                                <div style="display:flex; flex-direction:column; flex-grow:1;">
-                                    <div style="display:flex; align-items:center;">
-                                        <span class="row-id">{item['seq']}</span>
-                                        <span class="row-name">{item['name']}</span>
-                                    </div>
-                                    <div class="progress-bg"><div class="progress-fill" style="width:{p_width}%; background:{p_color};"></div></div>
-                                </div>
+                                <div class="row-id">#{item['seq']}</div>
+                                <div class="row-name">{item['name']}</div>
                                 <div style="display:flex; align-items:center;">
                                     <span class="row-stock">{int(item['stock']):,}</span>
                                     <span class="badge {b_cls}">{b_txt}</span>
                                 </div>
+                                <div class="progress-bg"><div class="progress-fill" style="width:{p_width}%; background:{p_color};"></div></div>
                             </div>
                         """, unsafe_allow_html=True)
-            except Exception as e: st.error(f"Error: {e}")
+            except Exception as e: st.error(f"Render Error: {e}")
         else: st.warning("🔄 กำลังเชื่อมต่อข้อมูล...")
 
     data_display()
