@@ -37,7 +37,6 @@ st.markdown("""
     
     h1 { 
         font-weight: 800; 
-        letter-spacing: -0.05em; 
         color: var(--text-main); 
         font-size: 3rem !important; 
         text-align: center; 
@@ -50,7 +49,6 @@ st.markdown("""
         margin-bottom: 2rem; 
         font-size: 0.9rem; 
         font-weight: 500; 
-        letter-spacing: 0.1em; 
     }
     
     .row-card { 
@@ -65,60 +63,19 @@ st.markdown("""
         border: 1px solid rgba(255,255,255,0.8); 
     }
     
-    .row-id { 
-        font-weight: 700; 
-        color: #4b91ff; 
-        font-size: 0.8rem; 
-        min-width: 40px; 
-    }
+    .row-id { font-weight: 700; color: #4b91ff; font-size: 0.8rem; min-width: 40px; }
+    .row-name { font-weight: 500; color: var(--text-main); flex-grow: 1; margin-left: 10px; font-size: 1rem; }
+    .row-stock { font-weight: 700; font-size: 1.2rem; margin-right: 20px; color: #1d1d1f; min-width: 50px; text-align: right; }
     
-    .row-name { 
-        font-weight: 500; 
-        color: var(--text-main); 
-        flex-grow: 1; 
-        margin-left: 10px; 
-        font-size: 1rem; 
-    }
-    
-    .row-stock { 
-        font-weight: 700; 
-        font-size: 1.2rem; 
-        margin-right: 20px; 
-        color: #1d1d1f; 
-        min-width: 50px; 
-        text-align: right; 
-    }
-    
-    .badge { 
-        padding: 6px 15px; 
-        border-radius: 12px; 
-        font-size: 0.75rem; 
-        font-weight: 600; 
-        min-width: 100px; 
-        text-align: center; 
-    }
-    
+    .badge { padding: 6px 15px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; min-width: 100px; text-align: center; }
     .badge-red { background: #ff3b30; color: white; }
     .badge-green { background: #34c759; color: white; }
     .badge-yellow { background: #ffcc00; color: #8a6d00; }
     
-    .stat-container { 
-        display: flex; 
-        gap: 15px; 
-        margin-bottom: 25px; 
-    }
-    
-    .stat-item { 
-        flex: 1; 
-        background: var(--white); 
-        border-radius: 20px; 
-        padding: 15px; 
-        text-align: center; 
-        box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light); 
-    }
-    
+    .stat-container { display: flex; gap: 15px; margin-bottom: 25px; }
+    .stat-item { flex: 1; background: var(--white); border-radius: 20px; padding: 15px; text-align: center; box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light); }
     .stat-val { font-size: 1.5rem; font-weight: 700; color: #2b62ff; }
-    .stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
     
     .stTextInput>div>div>input { 
         background: var(--bg) !important; 
@@ -126,7 +83,6 @@ st.markdown("""
         border-radius: 15px !important; 
         box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light) !important; 
         padding: 12px 20px !important; 
-        font-size: 0.95rem; 
     }
     
     #MainMenu, footer, header {visibility: hidden;}
@@ -134,7 +90,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- OneDrive Direct Download Link ---
-# ไฟล์คลังใหญ่ที่คุณแชร์ไว้
 DIRECT_DOWNLOAD_URL = "https://onedrive.live.com/download?resid=D2F8D50D153D114E%21142512&authkey=!AAL-L-F6Z3uhcUC"
 
 def download_excel():
@@ -144,14 +99,15 @@ def download_excel():
         if response.status_code == 200:
             return pd.read_excel(io.BytesIO(response.content), engine='openpyxl')
         return None
-    except:
+    except Exception:
         return None
 
 def main():
     st.markdown("<h1>คลังสินค้า M2</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='subtitle'>ระบบจัดการสต็อกอัจฉริยะ (Sync OneDrive)</p>", unsafe_allow_html=True)
+    st.markdown("<p class='subtitle'>REAL-TIME CLOUD INVENTORY</p>", unsafe_allow_html=True)
 
-    search_query = st.text_input("", placeholder="🔍 ค้นชื่อสินค้าที่นี่...", key="search_input")
+    # แก้ไขปัญหา Accessibility Warning เรื่อง Empty Label
+    search_query = st.text_input("ค้นหาชื่อสินค้าที่นี่", placeholder="🔍 ค้นชื่อสินค้าที่นี่...", key="search_input", label_visibility="collapsed")
 
     @st.fragment(run_every="60s")
     def render_content():
@@ -160,14 +116,13 @@ def main():
 
         if df_wh is not None:
             try:
-                # เลือกคอลัมน์ A=0 (ลำดับ), D=3 (ชื่อสินค้า), G=6 (จำนวนสต็อก)
+                # เลือกคอลัมน์ ลำดับ(0), ชื่อ(3), สต็อก(6)
                 p_df = pd.DataFrame({
                     'seq': df_wh.iloc[:, 0],
                     'name': df_wh.iloc[:, 3],
                     'stock': df_wh.iloc[:, 6]
                 })
-                
-                # กรองเอาเฉพาะที่มีเลขลำดับเท่านั้น (ตัดหัวตารางและชื่อหมวดหมู่)
+                # กรองเอาเฉพาะรายการที่มีเลขลำดับ
                 p_df['seq_n'] = pd.to_numeric(p_df['seq'], errors='coerce')
                 p_df = p_df.dropna(subset=['seq_n']).dropna(subset=['name'])
                 
@@ -211,11 +166,10 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
-                
             except Exception as e:
-                st.error(f"เกิดข้อผิดพลาดในการแสดงผล: {e}")
+                st.error(f"เกิดข้อผิดพลาดในการประมวลผล: {e}")
         else:
-            st.error("❌ ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบอินเทอร์เน็ตหรือลิงก์ OneDrive")
+            st.error("❌ ไม่สามารถดึงข้อมูลจาก OneDrive ได้ โปรดเช็คการเชื่อมต่อ")
 
     render_content()
 
