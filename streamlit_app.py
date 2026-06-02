@@ -240,7 +240,7 @@ def main():
                             b_cls, b_txt = "badge-red", "สินค้าหมด"
                         elif item['stock'] <= 50:
                             b_cls, b_txt = "badge-yellow", "สินค้าใกล้หมด"
-                        elif item['stock'] > 500:
+                        elif item['stock'] > 300:
                             b_cls, b_txt = "badge-blue", "สต็อกเยอะพิเศษ"
                         else:
                             b_cls, b_txt = "badge-green", "ปกติ"
