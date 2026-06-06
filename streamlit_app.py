@@ -141,20 +141,33 @@ SHARING_URL = "https://1drv.ms/x/c/d2f8d50d153d114e/IQCAAXold6FxQIxpxIaMxT-PAaN1
 
 def get_direct_link(sharing_url):
     try:
-        base64_bytes = base64.b64encode(sharing_url.encode("utf-8"))
-        base64_string = base64_bytes.decode("utf-8").replace('=', '').replace('/', '_').replace('+', '-')
-        return f"https://api.onedrive.com/v1.0/shares/u!{base64_string}/root/content?t={time.time()}"
-    except: return None
+        encoded = base64.b64encode(sharing_url.encode("utf-8")).decode("utf-8")
+        encoded = encoded.rstrip("=").replace("/", "_").replace("+", "-")
+        return f"https://graph.microsoft.com/v1.0/shares/u!{encoded}/driveItem/content"
+    except:
+        return None
 
 def load_data():
     url = get_direct_link(SHARING_URL)
-    if url:
-        try:
-            r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=20)
-            if r.status_code == 200:
-                return pd.read_excel(io.BytesIO(r.content), engine='openpyxl')
-        except: return None
-    return None
+    if not url:
+        return None
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'application/octet-stream, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        }
+        r = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
+
+        content_type = r.headers.get('Content-Type', '')
+
+        if r.status_code == 200 and ('excel' in content_type or 'openxmlformats' in content_type or 'octet-stream' in content_type):
+            return pd.read_excel(io.BytesIO(r.content), engine='openpyxl')
+        else:
+            st.error(f"❌ ดึงข้อมูลไม่ได้ | Status: {r.status_code} | Type: {content_type}")
+            return None
+    except Exception as e:
+        st.error(f"❌ Error: {e}")
+        return None
 
 def main():
     st.markdown("<div class='main-container'>", unsafe_allow_html=True)
