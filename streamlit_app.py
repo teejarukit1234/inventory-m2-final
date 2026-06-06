@@ -157,7 +157,6 @@ def load_data():
             'Accept': 'application/octet-stream, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         }
         r = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
-
         content_type = r.headers.get('Content-Type', '')
 
         if r.status_code == 200 and ('excel' in content_type or 'openxmlformats' in content_type or 'octet-stream' in content_type):
