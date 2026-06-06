@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 import io
-import base64
 import time
 from datetime import datetime
 
@@ -54,7 +53,6 @@ st.markdown("""
         text-transform: uppercase;
     }
 
-    /* Stats Section */
     .stat-container {
         display: flex;
         gap: 20px;
@@ -74,7 +72,6 @@ st.markdown("""
     .stat-val { font-size: 2rem; font-weight: 800; color: var(--accent-blue); display: block; }
     .stat-label { font-size: 0.8rem; color: #6e6e73; font-weight: 700; margin-top: 5px; }
 
-    /* Category Header */
     .category-header {
         font-weight: 800;
         color: var(--text-main);
@@ -85,7 +82,6 @@ st.markdown("""
     }
     .category-header::before { content: "📂"; margin-right: 12px; }
 
-    /* Product Card - Desktop Optimized */
     .row-card {
         background: var(--glass-bg);
         backdrop-filter: blur(12px);
@@ -109,18 +105,15 @@ st.markdown("""
     .row-stock-group { display: flex; align-items: center; gap: 20px; }
     .row-stock { font-weight: 800; font-size: 1.5rem; color: #1d1d1f; min-width: 80px; text-align: right; }
 
-    /* Progress Bar */
     .progress-bg { width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; margin-top: 8px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 10px; transition: width 1.5s ease; }
 
-    /* Badges */
     .badge { padding: 8px 15px; border-radius: 14px; font-size: 0.85rem; font-weight: 700; min-width: 120px; text-align: center; }
     .badge-red { background: linear-gradient(135deg, #ff5e62, #ff9966); color: white; }
     .badge-yellow { background: linear-gradient(135deg, #f6d365, #fda085); color: #1d1d1f; }
     .badge-green { background: linear-gradient(135deg, #a8ff78, #78ffd6); color: #155724; }
     .badge-blue { background: linear-gradient(135deg, #2193b0, #6dd5ed); color: white; }
 
-    /* MOBILE RESPONSIVE FIX */
     @media (max-width: 768px) {
         h1 { font-size: 2.2rem !important; }
         .stat-container { flex-direction: column; gap: 10px; }
@@ -130,36 +123,24 @@ st.markdown("""
         .row-stock { text-align: left; min-width: unset; }
     }
 
-    /* Hide Streamlit components */
     #MainMenu, footer, header {visibility: hidden;}
     div[data-testid="stDecoration"] {display:none;}
     </style>
     """, unsafe_allow_html=True)
 
 # --- Data Logic ---
-SHARING_URL = "https://1drv.ms/x/c/d2f8d50d153d114e/IQCAAXold6FxQIxpxIaMxT-PAaN1wjYtWRzPRAYo2ALha2s?e=TSbuBT"
-
-def get_direct_link(sharing_url):
-    try:
-        encoded = base64.b64encode(sharing_url.encode("utf-8")).decode("utf-8")
-        encoded = encoded.rstrip("=").replace("/", "_").replace("+", "-")
-        return f"https://graph.microsoft.com/v1.0/shares/u!{encoded}/driveItem/content"
-    except:
-        return None
+# Direct download link using resid + authkey (no token needed)
+DOWNLOAD_URL = "https://onedrive.live.com/download?resid=D2F8D50D153D114E!257A0180A177407189C69C4868CC53F8F&authkey=!ApJm5Qd"
 
 def load_data():
-    url = get_direct_link(SHARING_URL)
-    if not url:
-        return None
     try:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/octet-stream, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         }
-        r = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
+        r = requests.get(DOWNLOAD_URL, headers=headers, timeout=30, allow_redirects=True)
         content_type = r.headers.get('Content-Type', '')
 
-        if r.status_code == 200 and ('excel' in content_type or 'openxmlformats' in content_type or 'octet-stream' in content_type):
+        if r.status_code == 200 and ('excel' in content_type or 'openxmlformats' in content_type or 'octet-stream' in content_type or 'zip' in content_type):
             return pd.read_excel(io.BytesIO(r.content), engine='openpyxl')
         else:
             st.error(f"❌ ดึงข้อมูลไม่ได้ | Status: {r.status_code} | Type: {content_type}")
@@ -204,7 +185,6 @@ def main():
                             categorized_data.append(item)
                     except: continue
 
-                # Stats Header
                 st.markdown(f"""
                     <div class="stat-container">
                         <div class="stat-item"><span class="stat-val">{total_items}</span><span class="stat-label">รายการทั้งหมด</span></div>
